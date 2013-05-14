@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">-->
+<title>MVC.js</title>
+
+
+<script src="../Zim.js" type="text/javascript"></script>
+<script src="js/t.js" type="text/javascript"></script>
+<script language="javascript">
+onload = function(){
+
+model = new Zim.Model({
+	names:['Adam Cornille','Miles Xavier','Miranda Cornille'],
+	message:'yo',
+	initials:''
+});
+// custom setter
+model('initials').def(function(val, cb){
+		val = val.split(' ');
+		res = [];
+		res.push(val[0][0].toUpperCase());
+		if( val.length > 1 ){
+			res.push(val.pop()[0].toUpperCase());
+		}
+		cb(res.join('.')+'.');
+	});
+// extend the model
+model('myName').sub(model('initials').set).set(model.get('names.0'));
+// switch template engine
+Zim.renderer = function(template,data){
+	var tjs = new t(template);
+	return tjs.render(data);
+};
+view = new Zim.View(document.body);
+// Works, but sub-views are hidden from scope and can't be un-subscribed or modified:
+// model('names').subEach(function(){return (new Zim.view('#selectName')).update})
+
+// define view events
+/**
+view('#selectName').bind('change',function(){
+	model('myName').set(this.value);
+	var opts = selectName.getElementsByTagName('option'),
+		myName = model('myName').get();
+
+	for (var i = opts.length - 1; i >= 0; i--) {
+		if( opts[i].value == myName ){
+			opts[i].selected = 'selected';
+			break;
+		}
+	};
+});
+
+view('#message').bind('blur',function(){
+	model('message').set(this.value);
+});
+**/
+
+setEvents = function(view){
+	var selectName = document.getElementById('selectName'),
+		opts = selectName.getElementsByTagName('option'),
+		myName = model('myName').get();
+	selectName.addEventListener('change',function(){
+		model('myName').set(this.value);
+	});
+	document.getElementById('message').addEventListener('blur',function(){
+		model('message').set(this.value);
+	});
+
+	for (var i = opts.length - 1; i >= 0; i--) {
+		if( opts[i].value == myName ){
+			opts[i].selected = 'selected';
+			break;
+		}
+	};
+};
+
+view.bind('update',setEvents);
+
+// link model to view
+model.sub(view.update).pub();
+
+
+}
+</script>
+
+</head>
+<body>
+<div>
+	<select id="selectName">
+		{{@names}}
+		<option value="{{=_val}}">{{%_val}}</option>
+		{{/@names}}
+	</select>
+</div>
+{{myName}}
+<h2>Hello, <b>{{%myName}}</b>. {{%message}}</h2>
+{{/myName}}
+<form id="myForm">
+Message
+<input id="message" type="text" name="message" placeHolder="Message" value="{{=message}}"></input>
+</form>
+<div>
+	<small>({{%initials}})</small>
+<div>
+</body>
+</html>
